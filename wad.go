@@ -19,24 +19,24 @@ import (
 	"golang.org/x/exp/constraints"
 )
 
-// WAD is a struct that represents Doom's data archive that contains
-// graphics, sounds, and level data. The data is organized as named
-// lumps.
+// WAD is a struct that represents Doom's data archive that contains graphics, sounds, and level
+// data. The data is organized as named lumps.
 type WAD struct {
-	header           *Header
-	file             *os.File
-	lumpInfos        []LumpInfo
-	lumpNums         map[string]int
-	Palettes         *Palettes
-	ColorMaps        *ColorMaps
-	Endoom           *Endoom
-	Demos            []Demo
-	Dmxgus           *DMXGUS
-	patchNames       []string
-	PatchPics        map[string]*Picture
-	Textures         map[string]*Texture
-	Flats            map[string]*Flat
-	Sprites          map[string]*Picture
+	header     *Header
+	file       *os.File
+	lumpInfos  []LumpInfo
+	lumpNums   map[string]int
+	Palettes   *Palettes
+	ColorMaps  *ColorMaps
+	Endoom     *Endoom
+	Demos      []Demo
+	Dmxgus     *DMXGUS
+	patchNames []string
+	PatchPics  map[string]*Picture
+	Textures   map[string]*Texture
+	Flats      map[string]*Flat
+	Sprites    map[string]*Sprite
+	// SpriteFrames     map[string]*SpriteFrame
 	Sounds           map[string]*Sound
 	Scores           map[string]*MusicScore
 	levels           map[string]int
@@ -423,6 +423,22 @@ type Column []byte
 // Certain flats are animated to represent water, lava, blood, slime, or other substances.
 type Flat [64][64]byte
 
+// Sprites are patches with a special naming convention so they can be recognized by R_InitSprites.
+// The base name is NNNNFx or NNNNFxFx, with x indicating the rotation, x = 0, 1-7.
+// The sprite and frame specified by a thing_t is range checked at run time.
+// A sprite is a patch_t that is assumed to represent a 3D object and may have multiple
+// rotations pre drawn.
+// Horizontal flipping is used to save space, thus NNNNF2F5 defines a mirrored patch.
+// Some sprites will only have one picture used for all views: NNNNF0
+type Sprite []SpriteFrame
+
+type SpriteFrame [8]SpriteFrameDir
+
+type SpriteFrameDir struct {
+	Picture   *Picture
+	IsFlipped bool
+}
+
 type binSoundHeader struct {
 	Format     uint16
 	SampleRate uint16
@@ -626,6 +642,13 @@ func NewWAD(filename string) (*WAD, error) {
 		return nil, err
 	}
 	wad.Sprites = sprites
+
+	// Build sprite frames
+	// spriteFrames, err := wad.buildSpriteFrames()
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// wad.SpriteFrames = spriteFrames
 
 	// Read sound lumps
 	sounds, err := wad.readSounds()
@@ -946,10 +969,13 @@ func (w *WAD) readMusic() (map[string]*MusicScore, error) {
 }
 
 // readSprites
-func (w *WAD) readSprites() (map[string]*Picture, error) {
+func (w *WAD) readSprites() (map[string]*Sprite, error) {
 	logger.Println("Loading sprites ...")
 
-	sprites := make(map[string]*Picture)
+	// sprites := make(map[string]*Picture)
+	// spriteFrames := make(map[string]*SpriteFrame)
+	sprites := make(map[string]*Sprite)
+
 	startLump, ok := w.lumpNums["S_START"]
 	if !ok {
 		return nil, fmt.Errorf("S_START not found")
@@ -968,12 +994,52 @@ func (w *WAD) readSprites() (map[string]*Picture, error) {
 			continue
 		}
 
+		// Read lump into Picture format
 		picture, err := w.ReadPicture(lumpInfo.Name)
 		if err != nil {
 			logger.Printf("Err: %v", err)
 			continue
 		}
-		sprites[lumpInfo.Name] = picture
+
+		// Construct sprite name
+		spriteName := lumpInfo.Name[:4]
+		spriteframe := int(lumpInfo.Name[4] - 'A')
+		sprite, ok := sprites[spriteName]
+		if !ok {
+			sprite = new(Sprite)
+		}
+
+		// Grow sprite slice to fit this slice frame
+		for (len(*sprite) - 1) < spriteframe {
+			*sprite = append(*sprite, SpriteFrame{})
+		}
+		sf := &(*sprite)[spriteframe]
+
+		// If rotation zero, use this picture for all sprite directions
+		rotation := lumpInfo.Name[5] - '1'
+		if rotation == 0xff {
+			for i := range 8 {
+				sf[i].Picture = picture
+			}
+		} else {
+			sf[rotation].Picture = picture
+		}
+
+		if len(lumpInfo.Name) >= 8 {
+			if lumpInfo.Name[4] != lumpInfo.Name[6] {
+				logger.Println("ERR: Frames mismatch:", lumpInfo.Name)
+				continue
+			}
+			rotation := lumpInfo.Name[7] - '1'
+			if rotation == 0xff {
+				logger.Println("ERR: Flipped all rotation:", lumpInfo.Name)
+				continue
+			}
+			sf[rotation].Picture = picture
+			sf[rotation].IsFlipped = true
+		}
+		sprites[spriteName] = sprite
+
 	}
 	logger.Printf("Loaded %v sprites", len(sprites))
 	return sprites, nil

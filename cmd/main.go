@@ -24,19 +24,24 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	l, err := w.ReadLevel("E1M2")
-	if err != nil {
-		log.Fatalln(err)
+	boss := w.Sprites["BOSS"]
+	for _, f := range *boss {
+		fmt.Printf("%v\n", f)
 	}
 
-	pic, err := w.ReadPicture("HELP1")
-	if err != nil {
-		log.Fatalln(err)
-	}
-	createPNGPic("HELP1", pic, w)
+	// l, err := w.ReadLevel("E1M2")
+	// if err != nil {
+	// 	log.Fatalln(err)
+	// }
 
-	// fmt.Printf("%+v %+v", l.BlockMap.Columns*l.BlockMap.Rows, len(l.BlockMap.Blocklists))
-	fmt.Printf("%v", l.Reject[0])
+	// pic, err := w.ReadPicture("HELP1")
+	// if err != nil {
+	// 	log.Fatalln(err)
+	// }
+	// createPNGPic("HELP1", pic, w)
+
+	// // fmt.Printf("%+v %+v", l.BlockMap.Columns*l.BlockMap.Rows, len(l.BlockMap.Blocklists))
+	// fmt.Printf("%v", l.Reject[0])
 	// for k := range w.PatchPics {
 	// 	fmt.Println(k)
 	// }
