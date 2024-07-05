@@ -36,6 +36,7 @@ type WAD struct {
 	Textures   map[string]*Texture
 	Flats      map[string]*Flat
 	Sprites    map[string]*Sprite
+	Pictures   map[string]*Picture
 	// SpriteFrames     map[string]*SpriteFrame
 	Sounds           map[string]*Sound
 	Scores           map[string]*MusicScore

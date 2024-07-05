@@ -12,6 +12,12 @@ type binPatchImageHeader struct {
 
 // Read a picture lump
 func (w *WAD) ReadPicture(name string) (*Picture, error) {
+
+	// If cache hit, return it
+	if p, ok := w.Pictures[name]; ok {
+		return p, nil
+	}
+
 	lumpNum, ok := w.lumpNums[name]
 	if !ok {
 		return nil, fmt.Errorf("%v lump not found", name)
@@ -72,5 +78,10 @@ func (w *WAD) ReadPicture(name string) (*Picture, error) {
 			offset += 1 // Padding
 		}
 	}
-	return &Picture{Width: int(header.Width), Height: int(header.Height), Columns: columns}, nil
+
+	// Cache picture
+	w.Pictures[name] = &Picture{Width: int(header.Width), Height: int(header.Height), Columns: columns}
+
+	// Return pic
+	return w.Pictures[name], nil
 }
