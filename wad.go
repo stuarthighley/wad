@@ -281,6 +281,7 @@ type Sector struct {
 	SoundOrigin    Point // origin for any sounds played by the sector
 	BlockBox       BBox  // mapblock bounding box for height changes
 
+	R any // Runtime data (Doom will store fields as below)
 	// Soundtraversed int      // 0 = untraversed, 1,2 = sndlines -1
 	// Soundtarget    *Mobj    // thing that made a sound (or null)
 	// Validcount     int      // if == validcount, already checked
@@ -334,7 +335,7 @@ type binMusicInstruments []uint16
 // Bits 0-3  Channel number
 // Bits 4-6  Event type
 // Bit 7     Last (if set, event is followed by time information)
-type binSoundEvent byte
+// type binSoundEvent byte
 
 type SoundEvent struct {
 	ChannelNum int
@@ -969,13 +970,14 @@ func (w *WAD) readMusic() (map[string]*MusicScore, error) {
 }
 
 // readSprites
+// A Sprite is a slice of SpriteFrames
+// A SpriteFrame is eight Sprite Pictures, for each direction
+// A Sprite Picture is just a Doom Picture
 func (w *WAD) readSprites() (map[string]*Sprite, error) {
 	logger.Println("Loading sprites ...")
-
-	// sprites := make(map[string]*Picture)
-	// spriteFrames := make(map[string]*SpriteFrame)
 	sprites := make(map[string]*Sprite)
 
+	// Find start and end lumps
 	startLump, ok := w.lumpNums["S_START"]
 	if !ok {
 		return nil, fmt.Errorf("S_START not found")
@@ -985,7 +987,7 @@ func (w *WAD) readSprites() (map[string]*Sprite, error) {
 		return nil, fmt.Errorf("S_END not found")
 	}
 
-	// For each sprite lump
+	// For each sprite picture lump
 	for i := startLump; i < endLump; i++ {
 		lumpInfo := w.lumpInfos[i]
 
