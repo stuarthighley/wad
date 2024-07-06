@@ -11,10 +11,12 @@ type binPatchImageHeader struct {
 }
 
 // Read a picture lump
-func (w *WAD) ReadPicture(name string) (*Picture, error) {
+func (w *WAD) GetPicture(name string) (*Picture, error) {
 
 	// If cache hit, return it
-	if p, ok := w.Pictures[name]; ok {
+	if w.Pictures == nil {
+		w.Pictures = make(map[string]*Picture)
+	} else if p, ok := w.Pictures[name]; ok {
 		return p, nil
 	}
 

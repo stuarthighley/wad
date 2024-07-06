@@ -32,11 +32,10 @@ type WAD struct {
 	Demos      []Demo
 	Dmxgus     *DMXGUS
 	patchNames []string
-	PatchPics  map[string]*Picture
+	Pictures   map[string]*Picture
 	Textures   map[string]*Texture
 	Flats      map[string]*Flat
 	Sprites    map[string]*Sprite
-	Pictures   map[string]*Picture
 	// SpriteFrames     map[string]*SpriteFrame
 	Sounds           map[string]*Sound
 	Scores           map[string]*MusicScore
@@ -238,32 +237,13 @@ func (s *Node) BSPType() BSPType {
 
 // Sector
 
-// SpecialType values:
-// Type	Class	Effect
-// 0	Normal
-// 1	Light	Blink random
-// 2	Light	Blink 0.5 second
-// 3	Light	Blink 1.0 second
-// 4	Both	20% damage per second plus light blink 0.5 second
-// 5	Damage	10% damage per second
-// 7	Damage	5% damage per second
-// 8	Light	Oscillates
-// 9	Secret	Player entering this sector gets credit for finding a secret
-// 10	Door	30 seconds after level start, ceiling closes like a door
-// 11	End	20% damage per second. The level ends when the player's health drops below 11% and is touching the floor.
-// 12	Light	Blink 1.0 second, synchronized
-// 13	Light	Blink 0.5 second, synchronized
-// 14	Door	300 seconds after level start, ceiling opens like a door
-// 16	Damage	20% damage per second
-// 17	Light	Flickers randomly
-
 type binSector struct {
 	FloorHeight    int16
 	CeilingHeight  int16
 	FloorTexture   String8
 	CeilingTexture String8
 	LightLevel     int16
-	SpecialType    int16
+	Type           int16
 	TagNum         int16
 }
 
@@ -273,7 +253,7 @@ type Sector struct {
 	FloorTextureName   string
 	CeilingTextureName string
 	LightLevel         int
-	SpecialType        int
+	Type               SectorType
 	TagNum             int
 
 	FloorTexture   *Texture
@@ -289,6 +269,29 @@ type Sector struct {
 	// Thinglist      *Mobj    // Root of mobjs in sector linked list	// TODO - or should it be slice?
 	// Specialdata    *Thinker // thinker_t for reversable actions
 }
+
+type SectorType int
+
+const (
+	TypeNormal          SectorType = iota
+	TypeBlinkRandom                // 1  Light  Blink random
+	TypeBlink05                    // 2  Light  Blink 0.5 second
+	TypeBlink10                    // 3  Light  Blink 1.0 second
+	TypeDamage20Blink05            // 4  Both   20% damage per second; light blink 0.5 second
+	TypeDamage10                   // 5	 Damage 10% damage per second
+	TypeUnused1                    // 6  Unused
+	TypeDamage5                    // 7	 Damage 5% damage per second
+	TypeOscillate                  // 8	 Light  Oscillates
+	TypeSecret                     // 9	 Secret Player entering this sector gets credit for finding a secret
+	TypeDoor30                     // 10 Door   30 seconds after level start, ceiling closes like a door
+	TypeEnd                        // 11 End    20% damage ps. Level ends when player health drops below 11% & touching floor
+	TypeBlink10Sync                // 12 Light  Blink 1.0 second, synchronized
+	TypeBlink05Sync                // 13 Light  Blink 0.5 second, synchronized
+	TypeDoor300                    // 14 Door   300 seconds after level start, ceiling opens like a door
+	TypeUnused2                    // 15 Unused
+	TypeDamage20                   // 16 Damage 20% damage per second
+	TypeFlickerRandom              // 17 Light  Flickers randomly
+)
 
 type Point struct {
 	X, Y, Z float64
@@ -616,12 +619,11 @@ func NewWAD(filename string) (*WAD, error) {
 		return nil, err
 	}
 
-	// Read patchPics
-	patchPics, err := wad.readPatchPics()
+	// Read patchPics into Pictures map
+	err = wad.readPatchPics()
 	if err != nil {
 		return nil, err
 	}
-	wad.PatchPics = patchPics
 
 	// Read map textures
 	// Must be called after readPatchNames and readPatchLumps
@@ -770,19 +772,18 @@ func (w *WAD) readPatchNames() ([]string, error) {
 	return patchNames, nil
 }
 
-func (w *WAD) readPatchPics() (map[string]*Picture, error) {
+func (w *WAD) readPatchPics() error {
 	logger.Println("Loading patch pictures ...")
-	patches := make(map[string]*Picture)
 	for _, pname := range w.patchNames {
-		picture, err := w.ReadPicture(pname)
+		_, err := w.GetPicture(pname) // Also caches picture
 		if err != nil {
 			logger.Printf("Err: %v", err)
 			continue
 		}
-		patches[pname] = picture
-
 	}
-	return patches, nil
+	logger.Printf("Loaded %v patch pictures", len(w.Pictures))
+
+	return nil
 }
 
 func (w *WAD) readTextures() (map[string]*Texture, error) {
@@ -841,7 +842,7 @@ func (w *WAD) readTextures() (map[string]*Texture, error) {
 				patches[pi] = Patch{
 					XOffset: int(p.XOffset),
 					YOffset: int(p.YOffset),
-					Picture: w.PatchPics[w.patchNames[p.PatchNameIdx]],
+					Picture: w.Pictures[w.patchNames[p.PatchNameIdx]],
 				}
 			}
 			texture.Patches = patches
@@ -998,7 +999,7 @@ func (w *WAD) readSprites() (map[string]*Sprite, error) {
 		}
 
 		// Read lump into Picture format
-		picture, err := w.ReadPicture(lumpInfo.Name)
+		picture, err := w.GetPicture(lumpInfo.Name)
 		if err != nil {
 			logger.Printf("Err: %v", err)
 			continue
@@ -1045,6 +1046,7 @@ func (w *WAD) readSprites() (map[string]*Sprite, error) {
 
 	}
 	logger.Printf("Loaded %v sprites", len(sprites))
+	logger.Printf("(Loaded %v pictures)", len(w.Pictures))
 	return sprites, nil
 }
 
@@ -1566,7 +1568,7 @@ func (w *WAD) readSectors(lumpInfo *LumpInfo) ([]Sector, error) {
 			FloorTextureName:   s.FloorTexture.String(),
 			CeilingTextureName: s.CeilingTexture.String(),
 			LightLevel:         int(s.LightLevel),
-			SpecialType:        int(s.SpecialType),
+			Type:               SectorType(s.Type),
 			TagNum:             int(s.TagNum),
 		}
 		sectors[i].FloorTexture = w.Textures[sectors[i].FloorTextureName]

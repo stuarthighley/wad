@@ -19,15 +19,21 @@ func main() {
 	wad.SetLogger(log.New(os.Stdout, "", log.LstdFlags))
 
 	// New WAD
-	w, err := wad.NewWAD("../DOOM1.WAD")
+	_, err := wad.NewWAD("../DOOM1.WAD")
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	boss := w.Sprites["BOSS"]
-	for _, f := range *boss {
-		fmt.Printf("%v\n", f)
-	}
+	// log.Println(w)
+	// for k, _ := range w.Pictures {
+	// 	log.Println(k)
+	// }
+	// log.Println(len(w.Pictures))
+
+	// boss := w.Sprites["BOSS"]
+	// for _, f := range *boss {
+	// 	fmt.Printf("%v\n", f)
+	// }
 
 	// l, err := w.ReadLevel("E1M2")
 	// if err != nil {
