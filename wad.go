@@ -109,7 +109,7 @@ type Line struct {
 	BoundingBox             BBox      // For the extent of the LineDef
 	SlopeType               SlopeType // To aid move clipping
 	FrontSector, BackSector *Sector   // Redundant? Can be retrieved from Sides
-	// ValidCount              int       // if == validcount, already checked	// Runtime only? TODO
+	ValidCount              int       // if == validcount, already checked
 	// SpecialData             Thinker   // Thinker for reversable actions	// Unused on Line? TODO
 }
 
