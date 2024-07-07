@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"strings"
 )
 
 type binPatchImageHeader struct {
@@ -12,6 +13,7 @@ type binPatchImageHeader struct {
 
 // Read a picture lump
 func (w *WAD) GetPicture(name string) (*Picture, error) {
+	name = strings.ToUpper(name)
 
 	// If cache hit, return it
 	if w.Pictures == nil {

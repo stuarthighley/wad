@@ -19,7 +19,7 @@ func main() {
 	wad.SetLogger(log.New(os.Stdout, "", log.LstdFlags))
 
 	// New WAD
-	_, err := wad.NewWAD("../DOOM1.WAD")
+	w, err := wad.NewWAD("../DOOM1.WAD")
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -40,11 +40,11 @@ func main() {
 	// 	log.Fatalln(err)
 	// }
 
-	// pic, err := w.ReadPicture("HELP1")
-	// if err != nil {
-	// 	log.Fatalln(err)
-	// }
-	// createPNGPic("HELP1", pic, w)
+	pic, err := w.GetPicture("help1")
+	if err != nil {
+		log.Fatalln(err)
+	}
+	createPNGPic("HELP1", pic, w)
 
 	// // fmt.Printf("%+v %+v", l.BlockMap.Columns*l.BlockMap.Rows, len(l.BlockMap.Blocklists))
 	// fmt.Printf("%v", l.Reject[0])
