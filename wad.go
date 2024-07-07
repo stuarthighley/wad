@@ -379,11 +379,11 @@ type TextureHeader struct {
 }
 
 type Texture struct {
-	Name     string  //texture name
-	IsMasked bool    // flag denoting ???
-	Width    float64 // total width of the map texture
-	Height   float64 // total height of the map texture
-	Patches  []Patch
+	Name          string   //texture name
+	IsMasked      bool     // flag denoting ???
+	Width, Height int      // total width and height of the map texture
+	Patches       []Patch  // List of component Patches
+	Picture       *Picture // Expanded Picture for convenience
 }
 
 type binPatch struct {
@@ -399,12 +399,6 @@ type Patch struct {
 	YOffset int // vertical offset of patch relative to upper-left of texture
 	Picture *Picture
 }
-
-// type Image struct {
-// 	Width  int
-// 	Height int
-// 	Pixels []byte
-// }
 
 // The doom picture (image) format. Sometimes called a patch, but this code considers a patch to
 // be a parent entity that makes up part of a texture, and points to a picture
@@ -827,12 +821,16 @@ func (w *WAD) readTextures() (map[string]*Texture, error) {
 			if err := binary.Read(w.file, binary.LittleEndian, &binHeader); err != nil {
 				return nil, err
 			}
-			texture := Texture{
+
+			// Create texture
+			texture := &Texture{
 				Name:     binHeader.TextureName.String(),
 				IsMasked: binHeader.Masked != 0,
-				Width:    float64(binHeader.Width),
-				Height:   float64(binHeader.Height),
+				Width:    int(binHeader.Width),
+				Height:   int(binHeader.Height),
 			}
+
+			// Add patches to texture
 			binPatches := make([]binPatch, binHeader.NumPatches)
 			patches := make([]Patch, binHeader.NumPatches)
 			if err := binary.Read(w.file, binary.LittleEndian, binPatches); err != nil {
@@ -846,7 +844,27 @@ func (w *WAD) readTextures() (map[string]*Texture, error) {
 				}
 			}
 			texture.Patches = patches
-			textures[texture.Name] = &texture
+
+			// Expand out patches to create composite Picture
+			picture := &Picture{Width: texture.Width, Height: texture.Height, Columns: make([]Column, texture.Width)}
+			for i := range picture.Columns {
+				picture.Columns[i] = make([]byte, texture.Height)
+			}
+			for _, p := range texture.Patches {
+				sourceYOffset := 0
+				if p.YOffset < 0 {
+					sourceYOffset = -p.YOffset
+					p.YOffset = 0
+				}
+				for y, c := range p.Picture.Columns {
+					if p.XOffset+y >= 0 && p.XOffset+y < len(picture.Columns) {
+						copy(picture.Columns[p.XOffset+y][p.YOffset:], c[sourceYOffset:])
+					}
+				}
+			}
+			texture.Picture = picture
+
+			textures[texture.Name] = texture
 		}
 	}
 	logger.Printf("Loaded %v textures", len(textures))

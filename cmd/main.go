@@ -24,6 +24,12 @@ func main() {
 		log.Fatalln(err)
 	}
 
+	for k, t := range w.Textures {
+		fmt.Println("Texture:", k, t)
+		// createPNGPic(k, t.Picture, w)
+		//
+	}
+
 	// log.Println(w)
 	// for k, _ := range w.Pictures {
 	// 	log.Println(k)
@@ -40,11 +46,11 @@ func main() {
 	// 	log.Fatalln(err)
 	// }
 
-	pic, err := w.GetPicture("help1")
-	if err != nil {
-		log.Fatalln(err)
-	}
-	createPNGPic("HELP1", pic, w)
+	// pic, err := w.GetPicture("help1")
+	// if err != nil {
+	// 	log.Fatalln(err)
+	// }
+	// createPNGPic("HELP1", pic, w)
 
 	// // fmt.Printf("%+v %+v", l.BlockMap.Columns*l.BlockMap.Rows, len(l.BlockMap.Blocklists))
 	// fmt.Printf("%v", l.Reject[0])
