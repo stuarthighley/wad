@@ -24,10 +24,14 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	for k, t := range w.Textures {
-		fmt.Println("Texture:", k, t)
+	for i, t := range w.TexturesList {
+		fmt.Println("Texture:", i, t.Name, t.Index)
 		// createPNGPic(k, t.Picture, w)
 		//
+	}
+
+	for i, f := range w.FlatsList {
+		fmt.Println("Flat:", i, f.Name, f.Index)
 	}
 
 	// log.Println(w)
@@ -97,15 +101,15 @@ func createPNGPic(n string, p *wad.Picture, w *wad.WAD) error {
 // createPNGFlat
 func createPNGFlat(n string, flat *wad.Flat, w *wad.WAD) error {
 	upLeft := image.Point{0, 0}
-	lowRight := image.Point{len(flat), len(flat[0])}
+	lowRight := image.Point{len(flat.Data), len(flat.Data[0])}
 	img := image.NewRGBA(image.Rectangle{upLeft, lowRight})
 
 	palette := w.Palettes[0]
 	colormap := w.ColorMaps[0]
 
 	// Set color for each pixel.
-	for y := range flat {
-		for x, b := range flat[y] {
+	for y := range flat.Data {
+		for x, b := range flat.Data[y] {
 			c := palette[colormap[b]]
 			rgb := color.RGBA{c.Red, c.Green, c.Blue, 0xff}
 			img.SetRGBA(x, y, rgb)

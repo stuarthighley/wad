@@ -22,20 +22,22 @@ import (
 // WAD is a struct that represents Doom's data archive that contains graphics, sounds, and level
 // data. The data is organized as named lumps.
 type WAD struct {
-	header     *Header
-	file       *os.File
-	lumpInfos  []LumpInfo
-	lumpNums   map[string]int
-	Palettes   *Palettes
-	ColorMaps  *ColorMaps
-	Endoom     *Endoom
-	Demos      []Demo
-	Dmxgus     *DMXGUS
-	patchNames []string
-	Pictures   map[string]*Picture
-	Textures   map[string]*Texture
-	Flats      map[string]*Flat
-	Sprites    map[string]*Sprite
+	header       *Header
+	file         *os.File
+	lumpInfos    []LumpInfo
+	lumpNums     map[string]int
+	Palettes     *Palettes
+	ColorMaps    *ColorMaps
+	Endoom       *Endoom
+	Demos        []Demo
+	Dmxgus       *DMXGUS
+	patchNames   []string
+	Pictures     map[string]*Picture
+	Textures     map[string]*Texture
+	TexturesList []*Texture
+	Flats        map[string]*Flat
+	FlatsList    []*Flat
+	Sprites      map[string]*Sprite
 	// SpriteFrames     map[string]*SpriteFrame
 	Sounds           map[string]*Sound
 	Scores           map[string]*MusicScore
@@ -379,7 +381,8 @@ type TextureHeader struct {
 }
 
 type Texture struct {
-	Name          string   //texture name
+	Name          string   // Texture name and index into textures map
+	Index         int      // Index into TexturesList
 	IsMasked      bool     // flag denoting ???
 	Width, Height int      // total width and height of the map texture
 	Patches       []Patch  // List of component Patches
@@ -420,7 +423,11 @@ type Column []byte
 // flow smoothly from sector to sector. It can also cause problems for level designers, usually
 // when placing teleport pads.
 // Certain flats are animated to represent water, lava, blood, slime, or other substances.
-type Flat [64][64]byte
+type Flat struct {
+	Name  string // Flat name and index into flats map
+	Index int    // Index into flats list
+	Data  [64][64]byte
+}
 
 // Sprites are patches with a special naming convention so they can be recognized by R_InitSprites.
 // The base name is NNNNFx or NNNNFxFx, with x indicating the rotation, x = 0, 1-7.
@@ -621,18 +628,20 @@ func NewWAD(filename string) (*WAD, error) {
 
 	// Read map textures
 	// Must be called after readPatchNames and readPatchLumps
-	textures, err := wad.readTextures()
+	textures, texturesList, err := wad.readTextures()
 	if err != nil {
 		return nil, err
 	}
 	wad.Textures = textures
+	wad.TexturesList = texturesList
 
 	// Read flat lumps
-	flats, err := wad.readFlats()
+	flats, flatsList, err := wad.readFlats()
 	if err != nil {
 		return nil, err
 	}
 	wad.Flats = flats
+	wad.FlatsList = flatsList
 
 	// Read sprite lumps
 	sprites, err := wad.readSprites()
@@ -780,10 +789,11 @@ func (w *WAD) readPatchPics() error {
 	return nil
 }
 
-func (w *WAD) readTextures() (map[string]*Texture, error) {
+func (w *WAD) readTextures() (map[string]*Texture, []*Texture, error) {
 	logger.Println("Loading textures ...")
 
 	textures := make(map[string]*Texture)
+	texturesList := make([]*Texture, 0)
 	for i := 1; i < 10; i++ {
 
 		name := fmt.Sprintf("TEXTURE%v", i)
@@ -801,25 +811,25 @@ func (w *WAD) readTextures() (map[string]*Texture, error) {
 		// Read header
 		var count uint32
 		if err := binary.Read(w.file, binary.LittleEndian, &count); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		offsets := make([]int32, count)
 
 		// Read offsets
 		if err := binary.Read(w.file, binary.LittleEndian, offsets); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		// For each offset...
 		for _, offset := range offsets {
 			if err := w.seek(int64(lumpInfo.Filepos) + int64(offset)); err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 
 			// Read header
 			var binHeader binTextureHeader
 			if err := binary.Read(w.file, binary.LittleEndian, &binHeader); err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 
 			// Create texture
@@ -834,7 +844,7 @@ func (w *WAD) readTextures() (map[string]*Texture, error) {
 			binPatches := make([]binPatch, binHeader.NumPatches)
 			patches := make([]Patch, binHeader.NumPatches)
 			if err := binary.Read(w.file, binary.LittleEndian, binPatches); err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 			for pi, p := range binPatches {
 				patches[pi] = Patch{
@@ -864,26 +874,29 @@ func (w *WAD) readTextures() (map[string]*Texture, error) {
 			}
 			texture.Picture = picture
 
+			texture.Index = len(texturesList)
 			textures[texture.Name] = texture
+			texturesList = append(texturesList, texture)
 		}
 	}
 	logger.Printf("Loaded %v textures", len(textures))
 
-	return textures, nil
+	return textures, texturesList, nil
 }
 
 // readFlats
-func (w *WAD) readFlats() (map[string]*Flat, error) {
+func (w *WAD) readFlats() (map[string]*Flat, []*Flat, error) {
 	logger.Println("Loading flats ...")
 
 	flats := make(map[string]*Flat)
+	flatsList := make([]*Flat, 0)
 	startLump, ok := w.lumpNums["F_START"]
 	if !ok {
-		return nil, fmt.Errorf("F_START not found")
+		return nil, nil, fmt.Errorf("F_START not found")
 	}
 	endLump, ok := w.lumpNums["F_END"]
 	if !ok {
-		return nil, fmt.Errorf("F_END not found")
+		return nil, nil, fmt.Errorf("F_END not found")
 	}
 
 	// For each flat lump
@@ -897,16 +910,19 @@ func (w *WAD) readFlats() (map[string]*Flat, error) {
 
 		// Read lump and add to slice
 		if err := w.seek(int64(lumpInfo.Filepos)); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		var flat Flat
-		if err := binary.Read(w.file, binary.LittleEndian, &flat); err != nil {
-			return nil, err
+		if err := binary.Read(w.file, binary.LittleEndian, &flat.Data); err != nil {
+			return nil, nil, err
 		}
+		flat.Name = lumpInfo.Name
+		flat.Index = len(flatsList)
 		flats[lumpInfo.Name] = &flat
+		flatsList = append(flatsList, &flat)
 	}
 	logger.Printf("Loaded %v flats", len(flats))
-	return flats, nil
+	return flats, flatsList, nil
 }
 
 // readSounds
