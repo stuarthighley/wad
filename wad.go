@@ -105,7 +105,7 @@ type Line struct {
 
 	// References
 	V1, V2                  Vertex
-	DX, DY                  float64 // Precalculated VertexEnd-VertexStart for side checking
+	DX, DY                  int // Precalculated VertexEnd-VertexStart for side checking
 	TaggedSectors           []*Sector
 	SideR, SideL            *Side     // One of these can be null if one-sided. Not sure
 	BoundingBox             BBox      // For the extent of the LineDef
@@ -135,8 +135,8 @@ type binSide struct {
 }
 
 type Side struct {
-	XOffset           float64
-	YOffset           float64
+	XOffset           int
+	YOffset           int
 	UpperTextureName  string
 	LowerTextureName  string
 	MiddleTextureName string
@@ -148,7 +148,7 @@ type Side struct {
 }
 
 type Vertex struct {
-	X, Y float64
+	X, Y int
 }
 
 type binLineSegment struct {
@@ -157,7 +157,7 @@ type binLineSegment struct {
 	Angle     int16 // Full circle is -32768 to 32767.
 	LineNum   int16
 	Direction int16 // 0 - same as linedef, 1 - opposite to linedef
-	Offset    int16
+	Offset    int16 // Distance along line to start of segment
 }
 
 type LineSegment struct {
@@ -166,7 +166,7 @@ type LineSegment struct {
 	Angle   float64 // Radians
 	LineNum int
 	IsSideL bool // false - same as linedef, true - opposite to linedef
-	Offset  float64
+	Offset  int  // Distance along line to start of segment
 
 	V1          Vertex
 	V2          Vertex
@@ -190,15 +190,15 @@ type SubSector struct {
 }
 
 type BBox struct {
-	Top    float64
-	Bottom float64
-	Left   float64
-	Right  float64
+	Top    int
+	Bottom int
+	Left   int
+	Right  int
 }
 
 type DivLine struct {
-	X, Y   float64
-	DX, DY float64
+	X, Y   int
+	DX, DY int
 }
 
 type binNode struct {
@@ -209,8 +209,8 @@ type binNode struct {
 }
 
 type Node struct {
-	X, Y                 float64
-	DX, DY               float64
+	X, Y                 int
+	DX, DY               int
 	BBoxR, BBoxL         BBox
 	ChildNumR, ChildNumL int
 	ChildR, ChildL       BSPMember
@@ -250,8 +250,8 @@ type binSector struct {
 }
 
 type Sector struct {
-	FloorHeight        float64
-	CeilingHeight      float64
+	FloorHeight        int
+	CeilingHeight      int
 	FloorTextureName   string
 	CeilingTextureName string
 	LightLevel         int
@@ -296,7 +296,7 @@ const (
 )
 
 type Point struct {
-	X, Y, Z float64
+	X, Y, Z int
 }
 
 type Playpal struct {
@@ -315,8 +315,8 @@ type binBlockLineNum uint16
 // BlockMap is level data created from axis aligned bounding box of the map, a rectangular array
 // of blocks of size ... Used to speed up collision detection by spatial subdivision in 2D.
 type BlockMap struct {
-	OriginX, OriginY float64
-	Columns, Rows    float64
+	OriginX, OriginY int
+	Columns, Rows    int
 	Blocks           []Block
 }
 
@@ -475,7 +475,7 @@ type binThing struct {
 }
 
 type Thing struct {
-	X, Y            float64
+	X, Y            int
 	Angle           float64
 	Type            int
 	Skill1and2      bool
@@ -1339,10 +1339,10 @@ const MaxRadius = 32
 
 func newBBox() *BBox {
 	return &BBox{
-		Left:   math.MaxFloat64,
-		Right:  -math.MaxFloat64,
-		Bottom: math.MaxFloat64,
-		Top:    -math.MaxFloat64,
+		Left:   math.MaxInt,
+		Right:  math.MinInt,
+		Bottom: math.MaxInt,
+		Top:    math.MinInt,
 	}
 }
 
@@ -1401,8 +1401,8 @@ func (w *WAD) readThings(lumpInfo *LumpInfo) ([]Thing, error) {
 	// Translate to canonical
 	for i, t := range binThings {
 		things[i] = Thing{
-			X:               float64(t.X),
-			Y:               float64(t.Y),
+			X:               int(t.X),
+			Y:               int(t.Y),
 			Angle:           degreesToRadians(t.Angle),
 			Type:            int(t.Type),
 			Skill1and2:      t.Options&1 != 0,
@@ -1467,8 +1467,8 @@ func (w *WAD) readSides(lumpInfo *LumpInfo) ([]Side, error) {
 	// Translate to canonical
 	for i, s := range binSides {
 		sides[i] = Side{
-			XOffset:           float64(s.XOffset),
-			YOffset:           float64(s.YOffset),
+			XOffset:           int(s.XOffset),
+			YOffset:           int(s.YOffset),
 			UpperTextureName:  s.UpperTexture.String(),
 			MiddleTextureName: s.MiddleTexture.String(),
 			LowerTextureName:  s.LowerTexture.String(),
@@ -1496,7 +1496,7 @@ func (w *WAD) readVertexes(lumpInfo *LumpInfo) ([]Vertex, error) {
 
 	// Translate to canonical
 	for i, v := range binVertexes {
-		vertexes[i] = Vertex{X: float64(v.X), Y: float64(v.Y)}
+		vertexes[i] = Vertex{X: int(v.X), Y: int(v.Y)}
 	}
 	logger.Printf("Read %v vertexes", len(vertexes))
 
@@ -1566,14 +1566,14 @@ func (w *WAD) readNodes(lumpInfo *LumpInfo) ([]Node, error) {
 	// Translate to canonical
 	for i, n := range binNodes {
 		nodes[i] = Node{
-			X:  float64(n.X),
-			Y:  float64(n.Y),
-			DX: float64(n.DX),
-			DY: float64(n.DY),
-			BBoxR: BBox{float64(n.BBoxR.Top), float64(n.BBoxR.Bottom),
-				float64(n.BBoxR.Left), float64(n.BBoxR.Right)},
-			BBoxL: BBox{float64(n.BBoxL.Top), float64(n.BBoxL.Bottom),
-				float64(n.BBoxL.Left), float64(n.BBoxL.Right)},
+			X:  int(n.X),
+			Y:  int(n.Y),
+			DX: int(n.DX),
+			DY: int(n.DY),
+			BBoxR: BBox{int(n.BBoxR.Top), int(n.BBoxR.Bottom),
+				int(n.BBoxR.Left), int(n.BBoxR.Right)},
+			BBoxL: BBox{int(n.BBoxL.Top), int(n.BBoxL.Bottom),
+				int(n.BBoxL.Left), int(n.BBoxL.Right)},
 			ChildNumR: int(n.ChildNumR),
 			ChildNumL: int(n.ChildNumL),
 		}
@@ -1597,8 +1597,8 @@ func (w *WAD) readSectors(lumpInfo *LumpInfo) ([]Sector, error) {
 	// Translate to canonical
 	for i, s := range binSectors {
 		sectors[i] = Sector{
-			FloorHeight:        float64(s.FloorHeight),
-			CeilingHeight:      float64(s.CeilingHeight),
+			FloorHeight:        int(s.FloorHeight),
+			CeilingHeight:      int(s.CeilingHeight),
 			FloorTextureName:   s.FloorTexture.String(),
 			CeilingTextureName: s.CeilingTexture.String(),
 			LightLevel:         int(s.LightLevel),
@@ -1664,10 +1664,10 @@ func (w *WAD) readBlockmap(lumpInfo *LumpInfo) (*BlockMap, error) {
 
 	// Populate block map header
 	blockMap := BlockMap{
-		OriginX: float64(header.OriginX),
-		OriginY: float64(header.OriginY),
-		Columns: float64(header.Columns),
-		Rows:    float64(header.Rows),
+		OriginX: int(header.OriginX),
+		OriginY: int(header.OriginY),
+		Columns: int(header.Columns),
+		Rows:    int(header.Rows),
 	}
 
 	// Populate block lists
