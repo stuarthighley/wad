@@ -282,9 +282,9 @@ type binBlockLineNum uint16
 // BlockMap is level data created from axis aligned bounding box of the map, a rectangular array
 // of blocks of size ... Used to speed up collision detection by spatial subdivision in 2D.
 type BlockMap struct {
-	OriginX, OriginY float64
-	Columns, Rows    int
-	Blocks           []Block
+	OriginX, OriginY    float64
+	NumColumns, NumRows int
+	Blocks              []Block
 }
 
 type Block struct {
@@ -1263,13 +1263,13 @@ func (w *WAD) setReferences(l *Level) error {
 
 		// adjust bounding box to map blocks
 		block := int(bbox.Top - l.BlockMap.OriginY + MaxRadius)
-		s.BlockBox.Top = min(block, l.BlockMap.Rows-1)
+		s.BlockBox.Top = min(block, l.BlockMap.NumRows-1)
 
 		block = int(bbox.Bottom - l.BlockMap.OriginY - MaxRadius)
 		s.BlockBox.Bottom = max(block, 0)
 
 		block = int(bbox.Right - l.BlockMap.OriginX + MaxRadius)
-		s.BlockBox.Right = min(block, l.BlockMap.Columns-1)
+		s.BlockBox.Right = min(block, l.BlockMap.NumColumns-1)
 
 		block = int(bbox.Left - l.BlockMap.OriginX - MaxRadius)
 		s.BlockBox.Right = max(block, 0)
@@ -1641,10 +1641,10 @@ func (w *WAD) readBlockmap(lumpInfo *LumpInfo) (*BlockMap, error) {
 
 	// Populate block map header
 	blockMap := BlockMap{
-		OriginX: float64(header.OriginX),
-		OriginY: float64(header.OriginY),
-		Columns: int(header.Columns),
-		Rows:    int(header.Rows),
+		OriginX:    float64(header.OriginX),
+		OriginY:    float64(header.OriginY),
+		NumColumns: int(header.Columns),
+		NumRows:    int(header.Rows),
 	}
 
 	// Populate block lists
