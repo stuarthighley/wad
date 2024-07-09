@@ -119,8 +119,8 @@ type LineSegment struct {
 	V2Num   int
 	Angle   float64 // Radians
 	LineNum int
-	IsSideL bool // false - same as linedef, true - opposite to linedef
-	Offset  int  // Distance along line to start of segment
+	IsSideL bool    // false - same as linedef, true - opposite to linedef
+	Offset  float64 // Distance along line to start of segment
 
 	V1          Vertex
 	V2          Vertex
@@ -1498,6 +1498,7 @@ func (w *WAD) readLineSegments(lumpInfo *LumpInfo) ([]LineSegment, error) {
 			Angle:   bamToRadians(s.Angle),
 			LineNum: int(s.LineNum),
 			IsSideL: s.Direction == 1,
+			Offset:  float64(s.Offset),
 		}
 	}
 	logger.Printf("Read %v line segments", len(segments))
