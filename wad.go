@@ -205,8 +205,8 @@ type binNode struct {
 }
 
 type Node struct {
-	X, Y                 int
-	DX, DY               int
+	X, Y                 float64
+	DX, DY               float64
 	BBoxR, BBoxL         BoundBox
 	ChildNumR, ChildNumL int
 	ChildR, ChildL       BSPMember
@@ -1579,10 +1579,10 @@ func (w *WAD) readNodes(lumpInfo *LumpInfo) ([]Node, error) {
 	// Translate to canonical
 	for i, n := range binNodes {
 		nodes[i] = Node{
-			X:  int(n.X),
-			Y:  int(n.Y),
-			DX: int(n.DX),
-			DY: int(n.DY),
+			X:  float64(n.X),
+			Y:  float64(n.Y),
+			DX: float64(n.DX),
+			DY: float64(n.DY),
 			BBoxR: BoundBox{
 				float64(n.BBoxR.Top),
 				float64(n.BBoxR.Bottom),
