@@ -182,7 +182,7 @@ type binSubSector struct {
 }
 
 type SubSector struct {
-	NumLineSegments  int
+	numLineSegments  int
 	StartLineSegment int
 
 	LineSegments []LineSegment
@@ -1253,7 +1253,7 @@ func (w *WAD) setReferences(l *Level) error {
 	// SubSectors
 	for i := range l.SubSectors {
 		s := &l.SubSectors[i] // Point to element
-		for j := s.StartLineSegment; j < (s.StartLineSegment + s.NumLineSegments); j++ {
+		for j := s.StartLineSegment; j < (s.StartLineSegment + s.numLineSegments); j++ {
 			s.LineSegments = append(s.LineSegments, l.LineSegments[j])
 		}
 		s.Sector = s.LineSegments[0].Side.Sector
@@ -1544,7 +1544,7 @@ func (w *WAD) readSubSectors(lumpInfo *LumpInfo) ([]SubSector, error) {
 	// Translate to canonical
 	for i, s := range binSubSectors {
 		subSectors[i] = SubSector{
-			NumLineSegments:  int(s.NumSegments),
+			numLineSegments:  int(s.NumSegments),
 			StartLineSegment: int(s.StartLineSegment),
 		}
 	}
