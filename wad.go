@@ -89,8 +89,8 @@ type binSide struct {
 }
 
 type Side struct {
-	XOffset           int
-	YOffset           int
+	XOffset           float64
+	YOffset           float64
 	UpperTextureName  string
 	LowerTextureName  string
 	MiddleTextureName string
@@ -1443,8 +1443,8 @@ func (w *WAD) readSides(lumpInfo *LumpInfo) ([]Side, error) {
 	// Translate to canonical
 	for i, s := range binSides {
 		sides[i] = Side{
-			XOffset:           int(s.XOffset),
-			YOffset:           int(s.YOffset),
+			XOffset:           float64(s.XOffset),
+			YOffset:           float64(s.YOffset),
 			UpperTextureName:  s.UpperTexture.String(),
 			MiddleTextureName: s.MiddleTexture.String(),
 			LowerTextureName:  s.LowerTexture.String(),
