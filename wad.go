@@ -251,8 +251,8 @@ type binSector struct {
 }
 
 type Sector struct {
-	FloorHeight        int
-	CeilingHeight      int
+	FloorHeight        float64
+	CeilingHeight      float64
 	FloorTextureName   string
 	CeilingTextureName string
 	LightLevel         int
@@ -265,7 +265,7 @@ type Sector struct {
 	SoundOrigin    Point    // origin for any sounds played by the sector
 	BlockBox       BlockBox // mapblock bounding box for height changes
 
-	R any // Runtime data (Doom will store fields as below)
+	User any // User data (Doom will store fields as below)
 	// Soundtraversed int      // 0 = untraversed, 1,2 = sndlines -1
 	// Soundtarget    *Mobj    // thing that made a sound (or null)
 	// Validcount     int      // if == validcount, already checked
@@ -1606,8 +1606,8 @@ func (w *WAD) readSectors(lumpInfo *LumpInfo) ([]Sector, error) {
 	// Translate to canonical
 	for i, s := range binSectors {
 		sectors[i] = Sector{
-			FloorHeight:        int(s.FloorHeight),
-			CeilingHeight:      int(s.CeilingHeight),
+			FloorHeight:        float64(s.FloorHeight),
+			CeilingHeight:      float64(s.CeilingHeight),
 			FloorTextureName:   s.FloorTexture.String(),
 			CeilingTextureName: s.CeilingTexture.String(),
 			LightLevel:         int(s.LightLevel),
