@@ -262,6 +262,7 @@ type binSector struct {
 }
 
 type Sector struct {
+	Index              int
 	FloorHeight        float64
 	CeilingHeight      float64
 	FloorTextureName   string
@@ -1618,6 +1619,7 @@ func (w *WAD) readSectors(lumpInfo *LumpInfo) ([]Sector, error) {
 	// Translate to canonical
 	for i, s := range binSectors {
 		sectors[i] = Sector{
+			Index:              i,
 			FloorHeight:        float64(s.FloorHeight),
 			CeilingHeight:      float64(s.CeilingHeight),
 			FloorTextureName:   s.FloorTexture.String(),
