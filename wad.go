@@ -197,11 +197,6 @@ type BlockBox struct {
 	Top, Bottom, Left, Right int
 }
 
-type DivLine struct {
-	X, Y   int
-	DX, DY int
-}
-
 type binNode struct {
 	X, Y                 int16
 	DX, DY               int16
@@ -1214,6 +1209,7 @@ func (w *WAD) setReferences(l *Level) error {
 			li.SideL = &l.Sides[li.SideLNum]
 			li.BackSector = li.SideL.Sector
 		}
+
 		// Point to tagged sectors
 		for j := range l.Sectors {
 			if l.Sectors[j].TagNum == li.SectorTagNum {
