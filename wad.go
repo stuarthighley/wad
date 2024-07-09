@@ -351,7 +351,7 @@ type Texture struct {
 	Name          string   // Texture name and index into textures map
 	Index         int      // Index into TexturesList
 	IsMasked      bool     // flag denoting ???
-	Width, Height float64  // total width and height of the map texture
+	Width, Height int      // total width and height of the map texture
 	Patches       []Patch  // List of component Patches
 	Picture       *Picture // Expanded Picture for convenience
 }
@@ -373,7 +373,7 @@ type Patch struct {
 // The doom picture (image) format. Sometimes called a patch, but this code considers a patch to
 // be a parent entity that makes up part of a texture, and points to a picture
 type Picture struct {
-	Width, Height         float64
+	Width, Height         int
 	LeftOffset, TopOffset int // Allows soulspheres, weapons and keys to float
 	Columns               []Column
 }
@@ -390,11 +390,14 @@ type Column []byte
 // flow smoothly from sector to sector. It can also cause problems for level designers, usually
 // when placing teleport pads.
 // Certain flats are animated to represent water, lava, blood, slime, or other substances.
+
 type Flat struct {
 	Name  string // Flat name and index into flats map
 	Index int    // Index into flats list
-	Data  [64][64]byte
+	Data  [FlatHeight][FlatWidth]byte
 }
+
+const FlatWidth, FlatHeight = 64, 64
 
 // Sprites are patches with a special naming convention so they can be recognized by R_InitSprites.
 // The base name is NNNNFx or NNNNFxFx, with x indicating the rotation, x = 0, 1-7.
@@ -803,8 +806,8 @@ func (w *WAD) readTextures() (map[string]*Texture, []*Texture, error) {
 			texture := &Texture{
 				Name:     binHeader.TextureName.String(),
 				IsMasked: binHeader.Masked != 0,
-				Width:    float64(binHeader.Width),
-				Height:   float64(binHeader.Height),
+				Width:    int(binHeader.Width),
+				Height:   int(binHeader.Height),
 			}
 
 			// Add patches to texture
