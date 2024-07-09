@@ -79,52 +79,6 @@ type Sound struct {
 type MusicScore struct {
 }
 
-type binLine struct {
-	VertexStart, VertexEnd int16
-	Flags                  int16
-	Special                int16
-	SectorTag              int16
-	SideR, SideL           int16
-}
-
-type Line struct {
-	V1Num                  int
-	V2Num                  int
-	BlockPlayerAndMonsters bool
-	BlockMonsters          bool
-	TwoSided               bool
-	UpperTextureUnpegged   bool
-	LowerTextureUnpegged   bool
-	Secret                 bool
-	BlocksSound            bool
-	NeverMap               bool
-	AlwaysMap              bool // TODO Rename to 'seen'?
-	Special                int
-	SectorTagNum           int
-	SideRNum, SideLNum     int
-
-	// References
-	V1, V2                  Vertex
-	DX, DY                  float64 // Precalculated VertexEnd-VertexStart for side checking
-	TaggedSectors           []*Sector
-	SideR, SideL            *Side     // One of these can be null if one-sided. Not sure
-	BoundingBox             BoundBox  // For the extent of the LineDef
-	SlopeType               SlopeType // To aid move clipping
-	FrontSector, BackSector *Sector   // Redundant? Can be retrieved from Sides
-	ValidCount              int       // if == validcount, already checked
-	// SpecialData             Thinker   // Thinker for reversable actions	// Unused on Line? TODO
-}
-
-// Move clipping aid for LineDefs.
-type SlopeType int
-
-const (
-	SlopeTypeHorizontal SlopeType = iota
-	SlopeTypeVertical
-	SlopeTypePositive
-	SlopeTypeNegative
-)
-
 type binSide struct {
 	XOffset       int16
 	YOffset       int16
@@ -1455,7 +1409,7 @@ func (w *WAD) readLines(lumpInfo *LumpInfo) ([]Line, error) {
 			BlocksSound:            line.Flags&0x40 != 0,
 			NeverMap:               line.Flags&0x80 != 0,
 			AlwaysMap:              line.Flags&0x100 != 0,
-			Special:                int(line.Special),
+			Type:                   LineType(line.Type),
 			SectorTagNum:           int(line.SectorTag),
 			SideRNum:               int(line.SideR),
 			SideLNum:               int(line.SideL),
