@@ -70,7 +70,7 @@ func main() {
 
 func createPNGPic(n string, p *wad.Picture, w *wad.WAD) error {
 	upLeft := image.Point{0, 0}
-	lowRight := image.Point{p.Width, p.Height}
+	lowRight := image.Point{int(p.Width), int(p.Height)}
 	img := image.NewRGBA(image.Rectangle{upLeft, lowRight})
 
 	palette := w.Palettes[0]

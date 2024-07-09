@@ -338,20 +338,20 @@ type binTextureHeader struct {
 	NumPatches  int16
 }
 
-type TextureHeader struct {
-	TexName         string
-	Masked          int
-	Width           int
-	Height          int
-	ColumnDirectory int
-	NumPatches      int
-}
+// type TextureHeader struct {
+// 	TexName         string
+// 	Masked          int
+// 	Width           int
+// 	Height          int
+// 	ColumnDirectory int
+// 	NumPatches      int
+// }
 
 type Texture struct {
 	Name          string   // Texture name and index into textures map
 	Index         int      // Index into TexturesList
 	IsMasked      bool     // flag denoting ???
-	Width, Height int      // total width and height of the map texture
+	Width, Height float64  // total width and height of the map texture
 	Patches       []Patch  // List of component Patches
 	Picture       *Picture // Expanded Picture for convenience
 }
@@ -373,7 +373,7 @@ type Patch struct {
 // The doom picture (image) format. Sometimes called a patch, but this code considers a patch to
 // be a parent entity that makes up part of a texture, and points to a picture
 type Picture struct {
-	Width, Height         int
+	Width, Height         float64
 	LeftOffset, TopOffset int // Allows soulspheres, weapons and keys to float
 	Columns               []Column
 }
@@ -803,8 +803,8 @@ func (w *WAD) readTextures() (map[string]*Texture, []*Texture, error) {
 			texture := &Texture{
 				Name:     binHeader.TextureName.String(),
 				IsMasked: binHeader.Masked != 0,
-				Width:    int(binHeader.Width),
-				Height:   int(binHeader.Height),
+				Width:    float64(binHeader.Width),
+				Height:   float64(binHeader.Height),
 			}
 
 			// Add patches to texture
@@ -823,9 +823,9 @@ func (w *WAD) readTextures() (map[string]*Texture, []*Texture, error) {
 			texture.Patches = patches
 
 			// Expand out patches to create composite Picture
-			picture := &Picture{Width: texture.Width, Height: texture.Height, Columns: make([]Column, texture.Width)}
+			picture := &Picture{Width: texture.Width, Height: texture.Height, Columns: make([]Column, int(texture.Width))}
 			for i := range picture.Columns {
-				picture.Columns[i] = make([]byte, texture.Height)
+				picture.Columns[i] = make([]byte, int(texture.Height))
 			}
 			for _, p := range texture.Patches {
 				sourceYOffset := 0
