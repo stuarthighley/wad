@@ -105,10 +105,10 @@ type Line struct {
 
 	// References
 	V1, V2                  Vertex
-	DX, DY                  int // Precalculated VertexEnd-VertexStart for side checking
+	DX, DY                  float64 // Precalculated VertexEnd-VertexStart for side checking
 	TaggedSectors           []*Sector
 	SideR, SideL            *Side     // One of these can be null if one-sided. Not sure
-	BoundingBox             BBox      // For the extent of the LineDef
+	BoundingBox             BoundBox  // For the extent of the LineDef
 	SlopeType               SlopeType // To aid move clipping
 	FrontSector, BackSector *Sector   // Redundant? Can be retrieved from Sides
 	ValidCount              int       // if == validcount, already checked
@@ -148,7 +148,7 @@ type Side struct {
 }
 
 type Vertex struct {
-	X, Y int
+	X, Y float64
 }
 
 type binLineSegment struct {
@@ -189,11 +189,12 @@ type SubSector struct {
 	Sector       *Sector
 }
 
-type BBox struct {
-	Top    int
-	Bottom int
-	Left   int
-	Right  int
+type BoundBox struct {
+	Top, Bottom, Left, Right float64
+}
+
+type BlockBox struct {
+	Top, Bottom, Left, Right int
 }
 
 type DivLine struct {
@@ -211,7 +212,7 @@ type binNode struct {
 type Node struct {
 	X, Y                 int
 	DX, DY               int
-	BBoxR, BBoxL         BBox
+	BBoxR, BBoxL         BoundBox
 	ChildNumR, ChildNumL int
 	ChildR, ChildL       BSPMember
 	// Node                 [2]*Node
@@ -261,8 +262,8 @@ type Sector struct {
 	FloorTexture   *Texture
 	CeilingTexture *Texture
 	Lines          []*Line
-	SoundOrigin    Point // origin for any sounds played by the sector
-	BlockBox       BBox  // mapblock bounding box for height changes
+	SoundOrigin    Point    // origin for any sounds played by the sector
+	BlockBox       BlockBox // mapblock bounding box for height changes
 
 	R any // Runtime data (Doom will store fields as below)
 	// Soundtraversed int      // 0 = untraversed, 1,2 = sndlines -1
@@ -296,7 +297,7 @@ const (
 )
 
 type Point struct {
-	X, Y, Z int
+	X, Y, Z float64
 }
 
 type Playpal struct {
@@ -315,7 +316,7 @@ type binBlockLineNum uint16
 // BlockMap is level data created from axis aligned bounding box of the map, a rectangular array
 // of blocks of size ... Used to speed up collision detection by spatial subdivision in 2D.
 type BlockMap struct {
-	OriginX, OriginY int
+	OriginX, OriginY float64
 	Columns, Rows    int
 	Blocks           []Block
 }
@@ -1294,16 +1295,16 @@ func (w *WAD) setReferences(l *Level) error {
 		s.SoundOrigin.Y = (bbox.Top + bbox.Bottom) / 2
 
 		// adjust bounding box to map blocks
-		block := (bbox.Top - l.BlockMap.OriginY + MaxRadius)
+		block := int(bbox.Top - l.BlockMap.OriginY + MaxRadius)
 		s.BlockBox.Top = min(block, l.BlockMap.Rows-1)
 
-		block = (bbox.Bottom - l.BlockMap.OriginY - MaxRadius)
+		block = int(bbox.Bottom - l.BlockMap.OriginY - MaxRadius)
 		s.BlockBox.Bottom = max(block, 0)
 
-		block = (bbox.Right - l.BlockMap.OriginX + MaxRadius)
+		block = int(bbox.Right - l.BlockMap.OriginX + MaxRadius)
 		s.BlockBox.Right = min(block, l.BlockMap.Columns-1)
 
-		block = (bbox.Left - l.BlockMap.OriginX - MaxRadius)
+		block = int(bbox.Left - l.BlockMap.OriginX - MaxRadius)
 		s.BlockBox.Right = max(block, 0)
 
 	}
@@ -1337,8 +1338,8 @@ func (w *WAD) setReferences(l *Level) error {
 // the spider demon is larger, but don't have any moving sectors nearby
 const MaxRadius = 32
 
-func newBBox() *BBox {
-	return &BBox{
+func newBBox() *BoundBox {
+	return &BoundBox{
 		Left:   math.MaxInt,
 		Right:  math.MinInt,
 		Bottom: math.MaxInt,
@@ -1346,7 +1347,7 @@ func newBBox() *BBox {
 	}
 }
 
-func (b *BBox) add(v Vertex) {
+func (b *BoundBox) add(v Vertex) {
 	b.Left = min(b.Left, v.X)
 	b.Right = max(b.Right, v.X)
 	b.Bottom = min(b.Bottom, v.Y)
@@ -1496,7 +1497,7 @@ func (w *WAD) readVertexes(lumpInfo *LumpInfo) ([]Vertex, error) {
 
 	// Translate to canonical
 	for i, v := range binVertexes {
-		vertexes[i] = Vertex{X: int(v.X), Y: int(v.Y)}
+		vertexes[i] = Vertex{X: float64(v.X), Y: float64(v.Y)}
 	}
 	logger.Printf("Read %v vertexes", len(vertexes))
 
@@ -1570,10 +1571,18 @@ func (w *WAD) readNodes(lumpInfo *LumpInfo) ([]Node, error) {
 			Y:  int(n.Y),
 			DX: int(n.DX),
 			DY: int(n.DY),
-			BBoxR: BBox{int(n.BBoxR.Top), int(n.BBoxR.Bottom),
-				int(n.BBoxR.Left), int(n.BBoxR.Right)},
-			BBoxL: BBox{int(n.BBoxL.Top), int(n.BBoxL.Bottom),
-				int(n.BBoxL.Left), int(n.BBoxL.Right)},
+			BBoxR: BoundBox{
+				float64(n.BBoxR.Top),
+				float64(n.BBoxR.Bottom),
+				float64(n.BBoxR.Left),
+				float64(n.BBoxR.Right),
+			},
+			BBoxL: BoundBox{
+				float64(n.BBoxL.Top),
+				float64(n.BBoxL.Bottom),
+				float64(n.BBoxL.Left),
+				float64(n.BBoxL.Right),
+			},
 			ChildNumR: int(n.ChildNumR),
 			ChildNumL: int(n.ChildNumL),
 		}
@@ -1664,8 +1673,8 @@ func (w *WAD) readBlockmap(lumpInfo *LumpInfo) (*BlockMap, error) {
 
 	// Populate block map header
 	blockMap := BlockMap{
-		OriginX: int(header.OriginX),
-		OriginY: int(header.OriginY),
+		OriginX: float64(header.OriginX),
+		OriginY: float64(header.OriginY),
 		Columns: int(header.Columns),
 		Rows:    int(header.Rows),
 	}
