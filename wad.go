@@ -292,6 +292,11 @@ type Block struct {
 	Lines    []*Line
 }
 
+// Block returns a pointer to the specified block from the block map
+func (b *BlockMap) Block(x, y int) *Block {
+	return &b.Blocks[y*b.NumColumns+x]
+}
+
 // Music formats
 type binMusicHeader struct {
 	ID              [4]byte // identifier "MUS" 0x1A
