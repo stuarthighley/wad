@@ -219,6 +219,22 @@ type Node struct {
 	// SubSector            [2]*SubSector
 }
 
+// Return child for side
+func (n *Node) Child(side int) BSPMember {
+	if side == 0 {
+		return n.ChildR
+	}
+	return n.ChildL
+}
+
+// Return bound box for side
+func (n *Node) BoundBox(side int) *BoundBox {
+	if side == 0 {
+		return &n.BBoxR
+	}
+	return &n.BBoxL
+}
+
 type BSPType int
 
 const (
