@@ -399,7 +399,7 @@ type Column []byte
 type Flat struct {
 	Name  string // Flat name and index into flats map
 	Index int    // Index into flats list
-	Data  [][]byte
+	Data  []byte
 }
 
 const FlatWidth, FlatHeight = 64, 64
@@ -885,23 +885,14 @@ func (w *WAD) readFlats() (map[string]*Flat, []*Flat, error) {
 
 		// Allocate Flat
 		var flat Flat
-		flat.Data = make([][]byte, FlatHeight)
-		for i := range flat.Data {
-			flat.Data[i] = make([]byte, FlatWidth)
-		}
+		flat.Data = make([]byte, FlatHeight*FlatWidth)
 
 		// Read lump and add to slice
 		if err := w.seek(int64(lumpInfo.Filepos)); err != nil {
 			return nil, nil, err
 		}
-		buffer := make([]byte, FlatHeight*FlatWidth)
-		if err := binary.Read(w.file, binary.LittleEndian, buffer); err != nil {
+		if err := binary.Read(w.file, binary.LittleEndian, flat.Data); err != nil {
 			return nil, nil, err
-		}
-
-		// Populate data
-		for i := range buffer {
-			flat.Data[i/FlatWidth][i%FlatWidth] = buffer[i]
 		}
 
 		flat.Name = lumpInfo.Name

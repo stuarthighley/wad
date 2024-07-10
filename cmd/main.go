@@ -66,7 +66,7 @@ func main() {
 	// 	createPNGPic(k, s, w)
 	// }
 
-	// createPNGFlat("TEST", w.FlatsList[2], w)
+	createPNGFlat("TEST", w.FlatsList[2], w)
 
 }
 
@@ -103,19 +103,17 @@ func createPNGPic(n string, p *wad.Picture, w *wad.WAD) error {
 // createPNGFlat
 func createPNGFlat(n string, flat *wad.Flat, w *wad.WAD) error {
 	upLeft := image.Point{0, 0}
-	lowRight := image.Point{len(flat.Data), len(flat.Data[0])}
+	lowRight := image.Point{wad.FlatWidth, wad.FlatHeight}
 	img := image.NewRGBA(image.Rectangle{upLeft, lowRight})
 
 	palette := w.Palettes[0]
 	colormap := w.ColorMaps[0]
 
 	// Set color for each pixel.
-	for y := range flat.Data {
-		for x, b := range flat.Data[y] {
-			c := palette[colormap[b]]
-			rgb := color.RGBA{c.Red, c.Green, c.Blue, 0xff}
-			img.SetRGBA(x, y, rgb)
-		}
+	for i, b := range flat.Data {
+		c := palette[colormap[b]]
+		rgb := color.RGBA{c.Red, c.Green, c.Blue, 0xff}
+		img.SetRGBA(i%wad.FlatWidth, i/wad.FlatWidth, rgb)
 	}
 
 	// Encode as PNG.
