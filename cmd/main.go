@@ -66,6 +66,8 @@ func main() {
 	// 	createPNGPic(k, s, w)
 	// }
 
+	// createPNGFlat("TEST", w.FlatsList[2], w)
+
 }
 
 func createPNGPic(n string, p *wad.Picture, w *wad.WAD) error {
