@@ -89,3 +89,9 @@ func (w *WAD) GetPicture(name string) (*Picture, error) {
 	// Return pic
 	return w.Pictures[name], nil
 }
+
+// GetPictureOrNil
+func (w *WAD) GetPictureOrNil(name string) *Picture {
+	p, _ := w.GetPicture(name)
+	return p
+}
