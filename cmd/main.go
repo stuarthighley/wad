@@ -66,7 +66,7 @@ func main() {
 	// 	createPNGPic(k, s, w)
 	// }
 
-	createPNGFlat("TEST", w.FlatsList[2], w)
+	// createPNGFlat("TEST", w.FlatsList[2], w)
 
 }
 
