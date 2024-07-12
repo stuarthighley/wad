@@ -67,6 +67,9 @@ func main() {
 	// }
 
 	// createPNGFlat("TEST", w.FlatsList[2], w)
+	// createPNGPic("MED", w.GetPictureOrNil("TITLEPIC"), w)
+	// createPNGPic("SMALL", w.GetPictureOrNil("TITLEPIC").NewSize(160, 120), w)
+	// createPNGPic("BIG", w.GetPictureOrNil("TITLEPIC").NewSize(1920, 1080), w)
 
 }
 

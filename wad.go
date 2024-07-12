@@ -386,6 +386,24 @@ type Picture struct {
 // Rather than implement column posts, just set column to transparent and fill in post data.
 type Column []byte
 
+// NewSize creates a new resized picture
+func (p *Picture) NewSize(width, height int) *Picture {
+	pic := Picture{
+		Width:      width,
+		Height:     height,
+		LeftOffset: p.LeftOffset,
+		TopOffset:  p.TopOffset,
+		Columns:    make([]Column, width),
+	}
+	for y := range pic.Columns {
+		pic.Columns[y] = make(Column, height)
+		for x := range pic.Columns[y] {
+			pic.Columns[y][x] = p.Columns[y*p.Width/width][x*p.Height/height]
+		}
+	}
+	return &pic
+}
+
 // A flat is an image that is drawn on the floors and ceilings of sectors.
 // Flats are very different from wall textures. Flats are a raw collection of pixel values with no
 // offset or other dimension information; each flat is a named lump of 4096 bytes representing a
