@@ -12,6 +12,7 @@ import (
 	"io"
 	"math"
 	"os"
+	"reflect"
 	"sort"
 	"strings"
 	"unsafe"
@@ -1092,7 +1093,7 @@ func (w *WAD) LevelNames() []string {
 }
 
 // ReadLevel reads level data from WAD archive and returns a Level struct.
-func (w *WAD) ReadLevel(name string) (*Level, error) {
+func (w *WAD) ReadLevel(name string, sectorUser any) (*Level, error) {
 	logger.Printf("Reading Level %v ...", name)
 
 	level := Level{}
@@ -1147,7 +1148,7 @@ func (w *WAD) ReadLevel(name string) (*Level, error) {
 			}
 			level.Nodes = nodes
 		case "SECTORS":
-			sectors, err := w.readSectors(&lumpInfo)
+			sectors, err := w.readSectors(&lumpInfo, sectorUser)
 			if err != nil {
 				return nil, err
 			}
@@ -1590,7 +1591,7 @@ func (w *WAD) readNodes(lumpInfo *LumpInfo) ([]Node, error) {
 	return nodes, nil
 }
 
-func (w *WAD) readSectors(lumpInfo *LumpInfo) ([]Sector, error) {
+func (w *WAD) readSectors(lumpInfo *LumpInfo, sectorUser any) ([]Sector, error) {
 	logger.Println("Reading Sectors ...")
 
 	// Read lump
@@ -1603,6 +1604,10 @@ func (w *WAD) readSectors(lumpInfo *LumpInfo) ([]Sector, error) {
 
 	// Translate to canonical
 	for i, s := range binSectors {
+		newUser, err := cloneSectorUserData(sectorUser)
+		if err != nil {
+			return nil, errors.New("cannot clone passed sectorUserData")
+		}
 		sectors[i] = Sector{
 			Index:              i,
 			FloorHeight:        float64(s.FloorHeight),
@@ -1612,6 +1617,7 @@ func (w *WAD) readSectors(lumpInfo *LumpInfo) ([]Sector, error) {
 			LightLevel:         int(s.LightLevel),
 			Type:               SectorType(s.Type),
 			TagNum:             int(s.TagNum),
+			User:               newUser,
 		}
 		sectors[i].FloorTexture = w.Textures[sectors[i].FloorTextureName]
 		sectors[i].CeilingTexture = w.Textures[sectors[i].CeilingTextureName]
@@ -1747,4 +1753,24 @@ const halfScale = 1 << 15
 
 func bamToRadians[T constraints.Signed](n T) float64 {
 	return ((float64(n) + halfScale) * math.Pi) / halfScale
+}
+
+// CloneStruct clones a struct referenced by an any interface
+func cloneSectorUserData(src any) (any, error) {
+	// Get the value of the source
+	srcVal := reflect.ValueOf(src)
+
+	// Ensure the source is a struct
+	if srcVal.Kind() != reflect.Struct {
+		return nil, fmt.Errorf("source is not a struct")
+	}
+
+	// Create a new instance of the same type
+	cloneVal := reflect.New(srcVal.Type()).Elem()
+
+	// Copy the fields from the source struct to the new instance
+	cloneVal.Set(srcVal)
+
+	// Return the new instance as an any interface
+	return cloneVal.Interface(), nil
 }
