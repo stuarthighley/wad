@@ -226,8 +226,8 @@ type Sector struct {
 	Type               SectorType
 	TagNum             int
 
-	FloorTexture   *Texture
-	CeilingTexture *Texture
+	FloorTexture   *Flat
+	CeilingTexture *Flat
 	Lines          []*Line
 	SoundOrigin    Point    // origin for any sounds played by the sector
 	BlockBox       BlockBox // mapblock bounding box for height changes
@@ -1619,8 +1619,8 @@ func (w *WAD) readSectors(lumpInfo *LumpInfo, sectorUser any) ([]Sector, error) 
 			TagNum:             int(s.TagNum),
 			User:               newUser,
 		}
-		sectors[i].FloorTexture = w.Textures[sectors[i].FloorTextureName]
-		sectors[i].CeilingTexture = w.Textures[sectors[i].CeilingTextureName]
+		sectors[i].FloorTexture = w.Flats[sectors[i].FloorTextureName]
+		sectors[i].CeilingTexture = w.Flats[sectors[i].CeilingTextureName]
 	}
 	logger.Printf("Read %v Sectors", len(sectors))
 

@@ -40,11 +40,15 @@ func main() {
 	}
 
 	sectorUser := SectorUserData{}
-	l, err := w.ReadLevel("E1M1", sectorUser)
+	_, err = w.ReadLevel("E1M1", sectorUser)
 	if err != nil {
 		fmt.Println(err)
 	}
-	fmt.Println(l)
+	// fmt.Println(l)
+
+	for k := range w.Flats {
+		fmt.Println(k)
+	}
 
 	// log.Println(w)
 	// for k, _ := range w.Pictures {
