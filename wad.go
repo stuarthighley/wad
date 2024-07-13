@@ -1180,7 +1180,12 @@ func (w *WAD) ReadLevel(name string, sectorUser any) (*Level, error) {
 func (w *WAD) setReferences(l *Level) error {
 	logger.Println("Setting references ...")
 
-	// Lines
+	// Sides
+	for i := range l.Sides {
+		l.Sides[i].Sector = &l.Sectors[l.Sides[i].SectorNum]
+	}
+
+	// Lines - dependent on Sides
 	for i := range l.Lines {
 		li := &l.Lines[i] // Point to element
 		li.V1 = l.Vertexes[li.V1Num]
@@ -1220,11 +1225,6 @@ func (w *WAD) setReferences(l *Level) error {
 		li.BoundingBox.Bottom = min(li.V1.Y, li.V2.Y)
 		li.BoundingBox.Left = max(li.V1.Y, li.V2.Y)
 
-	}
-
-	// Sides
-	for i := range l.Sides {
-		l.Sides[i].Sector = &l.Sectors[l.Sides[i].SectorNum]
 	}
 
 	// Line Segments
