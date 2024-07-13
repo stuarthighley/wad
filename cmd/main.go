@@ -11,6 +11,11 @@ import (
 	"github.com/stuarthighley/wad"
 )
 
+type SectorUserData struct {
+	SoundTraversed int // 0 = untraversed, 1,2 = sndlines -1
+	ValidCount     int // if == validcount, already checked
+}
+
 func main() {
 
 	log.Println("Starting")
@@ -33,6 +38,13 @@ func main() {
 	for i, f := range w.FlatsList {
 		fmt.Println("Flat:", i, f.Name, f.Index)
 	}
+
+	sectorUser := SectorUserData{}
+	l, err := w.ReadLevel("E1M1", sectorUser)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(l)
 
 	// log.Println(w)
 	// for k, _ := range w.Pictures {
@@ -65,6 +77,9 @@ func main() {
 	// for k, s := range w.Sprites {
 	// 	createPNGPic(k, s, w)
 	// }
+
+	p := w.GetPictureOrNil("TITLEPIC")
+	log.Println(p.Height, p.Width)
 
 	// createPNGFlat("TEST", w.FlatsList[2], w)
 	// createPNGPic("MED", w.GetPictureOrNil("TITLEPIC"), w)
