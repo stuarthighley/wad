@@ -379,6 +379,7 @@ type Patch struct {
 // The doom picture (image) format. Sometimes called a patch, but this code considers a patch to
 // be a parent entity that makes up part of a texture, and points to a picture
 type Picture struct {
+	Name                  string // Useful for debugging
 	Width, Height         int
 	LeftOffset, TopOffset int // Allows soulspheres, weapons and keys to float
 	Columns               []Column
@@ -390,6 +391,7 @@ type Column []byte
 // NewSize creates a new resized picture
 func (p *Picture) NewSize(width, height int) *Picture {
 	pic := Picture{
+		Name:       p.Name,
 		Width:      width,
 		Height:     height,
 		LeftOffset: p.LeftOffset,
@@ -850,7 +852,14 @@ func (w *WAD) readTextures() (map[string]*Texture, []*Texture, error) {
 			texture.Patches = patches
 
 			// Expand out patches to create composite Picture
-			picture := &Picture{Width: texture.Width, Height: texture.Height, Columns: make([]Column, int(texture.Width))}
+			picture := &Picture{
+				Name:       texture.Name,
+				Width:      texture.Width,
+				Height:     texture.Height,
+				LeftOffset: 0,
+				TopOffset:  0,
+				Columns:    make([]Column, int(texture.Width)),
+			}
 			for i := range picture.Columns {
 				picture.Columns[i] = make([]byte, int(texture.Height))
 			}

@@ -50,6 +50,9 @@ func main() {
 		fmt.Println(k)
 	}
 
+	p := w.GetPictureOrNil("M_GDHIGH")
+	fmt.Println(p.Name, p.LeftOffset, p.TopOffset)
+
 	// log.Println(w)
 	// for k, _ := range w.Pictures {
 	// 	log.Println(k)
@@ -82,8 +85,14 @@ func main() {
 	// 	createPNGPic(k, s, w)
 	// }
 
-	p := w.GetPictureOrNil("TITLEPIC")
+	p = w.GetPictureOrNil("TITLEPIC")
 	log.Println(p.Height, p.Width)
+
+	t := w.Textures["BIGDOOR1"]
+	for _, p := range t.Patches {
+		fmt.Println("    ", p.Picture.Name)
+	}
+	fmt.Println(t.Picture.Name)
 
 	// createPNGFlat("TEST", w.FlatsList[2], w)
 	// createPNGPic("MED", w.GetPictureOrNil("TITLEPIC"), w)

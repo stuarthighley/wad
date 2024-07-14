@@ -83,11 +83,20 @@ func (w *WAD) GetPicture(name string) (*Picture, error) {
 		}
 	}
 
+	// Create picture
+	pic := &Picture{
+		Name:       name,
+		Width:      int(header.Width),
+		Height:     int(header.Height),
+		LeftOffset: int(header.LeftOffset),
+		TopOffset:  int(header.TopOffset),
+		Columns:    columns}
+
 	// Cache picture
-	w.Pictures[name] = &Picture{Width: int(header.Width), Height: int(header.Height), Columns: columns}
+	w.Pictures[name] = pic
 
 	// Return pic
-	return w.Pictures[name], nil
+	return pic, nil
 }
 
 // GetPictureOrNil
