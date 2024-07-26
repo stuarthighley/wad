@@ -102,6 +102,7 @@ type Side struct {
 	Sector            *Sector
 }
 
+// Represents a Vertex. Positive X is east. Positive Y is north.
 type Vertex struct {
 	X, Y float64
 }
@@ -109,7 +110,7 @@ type Vertex struct {
 type binLineSegment struct {
 	V1        int16
 	V2        int16
-	Angle     int16 // Full circle is -32768 to 32767.
+	Angle     uint16 // Full circle is -32768 to 32767.
 	LineNum   int16
 	Direction int16 // 0 - same as linedef, 1 - opposite to linedef
 	Offset    int16 // Distance along line to start of segment
@@ -465,14 +466,21 @@ type Level struct {
 type binThing struct {
 	X       int16
 	Y       int16
-	Angle   int16
+	Angle   int16 // Arc degrees increasing counterclockwise from east
 	Type    int16
 	Options int16
 }
 
+// Things represent players, monsters, pick-ups, and projectiles. Inside the game, these are known
+// as actors, or mobjs. They also represent obstacles, certain decorations, player start positions
+// and teleport landing sites.
+// While some mobjs, such as projectiles and special effects, can only be created during play,
+// most things can be placed in a map from a map editor through an associated editor number. When
+// the map is loaded, an actor that corresponds to that number will be spawned at the location of
+// that map thing. See thing types for a listing of all things that have an associated editor number.
 type Thing struct {
 	X, Y            int
-	Angle           float64
+	Angle           float64 // Arc radians increasing counterclockwise from east
 	Type            int
 	Skill1and2      bool
 	Skill3          bool
@@ -1448,7 +1456,7 @@ func (w *WAD) readLines(lumpInfo *LumpInfo) ([]Line, error) {
 			Secret:                 line.Flags&0x20 != 0,
 			BlocksSound:            line.Flags&0x40 != 0,
 			NeverMap:               line.Flags&0x80 != 0,
-			AlwaysMap:              line.Flags&0x100 != 0,
+			Mapped:                 line.Flags&0x100 != 0,
 			Type:                   LineType(line.Type),
 			SectorTagNum:           int(line.SectorTag),
 			SideRNum:               int(line.SideR),
@@ -1527,7 +1535,7 @@ func (w *WAD) readLineSegments(lumpInfo *LumpInfo) ([]LineSegment, error) {
 		segments[i] = LineSegment{
 			V1Num:   int(s.V1),
 			V2Num:   int(s.V2),
-			Angle:   bamToRadians(s.Angle),
+			Angle:   wadBamToRadians(s.Angle),
 			LineNum: int(s.LineNum),
 			IsSideL: s.Direction == 1,
 			Offset:  float64(s.Offset),
@@ -1758,10 +1766,8 @@ func degreesToRadians[T constraints.Integer | constraints.Float](n T) float64 {
 	return float64(n) * (math.Pi / 180)
 }
 
-const halfScale = 1 << 15
-
-func bamToRadians[T constraints.Signed](n T) float64 {
-	return ((float64(n) + halfScale) * math.Pi) / halfScale
+func wadBamToRadians(n uint16) float64 {
+	return (float64(n) * 2 * math.Pi) / math.MaxUint16
 }
 
 // CloneStruct clones a struct referenced by an any interface

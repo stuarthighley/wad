@@ -19,7 +19,7 @@ type Line struct {
 	Secret                 bool
 	BlocksSound            bool
 	NeverMap               bool
-	AlwaysMap              bool
+	Mapped                 bool
 	Type                   LineType
 	SectorTagNum           int
 	SideRNum, SideLNum     int
