@@ -1634,7 +1634,7 @@ func (w *WAD) readSectors(lumpInfo *LumpInfo, sectorUser any) ([]Sector, error) 
 			LightLevel:         int(s.LightLevel),
 			Type:               SectorType(s.Type),
 			TagNum:             int(s.TagNum),
-			User:               newUser,
+			User:               &newUser,
 		}
 		sectors[i].FloorTexture = w.Flats[sectors[i].FloorTextureName]
 		sectors[i].CeilingTexture = w.Flats[sectors[i].CeilingTextureName]
